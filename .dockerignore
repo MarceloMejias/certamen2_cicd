@@ -1,0 +1,23 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# CI/CD
+Jenkinsfile
+sonar-project.properties
+
+# Documentación
+README.md
+*.md
+
+# Logs
+*.log
+
+# Archivos temporales
+.DS_Store
+Thumbs.db

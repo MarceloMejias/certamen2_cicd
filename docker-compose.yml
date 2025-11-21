@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Aplicación web
+  webapp:
+    build: .
+    container_name: pokemon-app
+    ports:
+      - "8080:80"
+    networks:
+      - devops-network
+    depends_on:
+      - sonarqube
+    restart: unless-stopped
+
+  # SonarQube
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - devops-network
+    restart: unless-stopped
+
+  # Jenkins
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    privileged: true
+    user: root
+    ports:
+      - "8081:8080"
+      - "50000:50000"
+    environment:
+      - DOCKER_HOST=tcp://docker:2376
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins-docker-certs:/certs/client:ro
+    networks:
+      - devops-network
+    restart: unless-stopped
+
+  # Docker-in-Docker para Jenkins
+  docker:
+    image: docker:dind
+    container_name: jenkins-docker
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+    volumes:
+      - jenkins-docker-certs:/certs/client
+      - jenkins_home:/var/jenkins_home
+    networks:
+      - devops-network
+    command: --storage-driver=overlay2
+    restart: unless-stopped
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  jenkins_home:
+  jenkins-docker-certs:
+
+networks:
+  devops-network:
+    driver: bridge
